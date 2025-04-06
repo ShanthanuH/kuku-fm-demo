@@ -24,7 +24,7 @@ def text_to_speech(text):
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def generate_story_continuation(story_so_far, user_input):
     prompt = f"""
-Continue this Indian murder mystery set in Darjeeling. Write immersive and vivid prose like a gripping detective thriller. Continue the story in 1 paragraph based on the user's decision. End with a question asking what the user wants to do next. DO NOT include any text like "User decides:" or similar - only provide the narrative continuation. Make sure that you dont end in between sentence, always end a para with a question for the user. After the user answers, continue from there, generate like 50 words continue story, and then give a question for the user again.
+Continue this Indian murder mystery set in Darjeeling. Write immersive and vivid prose like a gripping detective thriller. Continue the story in strictly 1 paragraph (not more) based on the user's decision. End with a question asking what the user wants to do next. DO NOT include any text like "User decides:" or similar - only provide the narrative continuation. Make sure that you dont end in between sentence, always end a para with a question for the user. After the user answers, continue from there, generate like 50 words continue story, and then give a question for the user again.
 
 Case notes so far:
 {story_so_far}
