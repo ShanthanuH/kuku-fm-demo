@@ -4,6 +4,7 @@ import tempfile
 import os
 import requests
 import re
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 # --- Page Setup ---
 st.set_page_config(page_title="Kuku VoiceChoice: Indian Murder Mystery", page_icon="🕵️‍♂️")
@@ -15,9 +16,10 @@ def text_to_speech(text):
     tts.save(fp)
     return fp
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def generate_story_continuation(story_so_far, user_input):
     prompt = f"""
-Continue this Indian murder mystery set in Darjeeling. Write immersive and vivid prose like a gripping detective thriller. Continue the story in 1-2 paragraphs based on the user's decision. End with a question asking what the user wants to do next. DO NOT include any text like "User decides:" or similar - only provide the narrative continuation.
+Continue this Indian murder mystery set in Darjeeling. Write immersive and vivid prose like a gripping detective thriller. Continue the story in 1 paragraph based on the user's decision. End with a question asking what the user wants to do next. DO NOT include any text like "User decides:" or similar - only provide the narrative continuation. Make sure that you dont end in between sentence, always end a para with a question for the user. After the user answers, continue from there, generate like 50 words continue story, and then give a question for the user again.
 
 Case notes so far:
 {story_so_far}
@@ -28,8 +30,7 @@ User chose:
 Now continue:
 """
 
-    # Replace with secure method: API_KEY = st.secrets["HUGGINGFACE_API_KEY"]
-    API_KEY = "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"
+    API_KEY = st.secrets["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"]
     API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
     headers = {
         "Authorization": f"Bearer {API_KEY}",
@@ -39,29 +40,31 @@ Now continue:
     payload = {
         "inputs": prompt,
         "parameters": {
-            "max_new_tokens": 300,
+            "max_new_tokens": 250,  # Reduced token limit to manage API usage
             "temperature": 0.85,
             "do_sample": True
         }
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
-        if response.status_code == 200:
-            output = response.json()
-            if isinstance(output, list) and "generated_text" in output[0]:
-                generated = output[0]["generated_text"]
-                # Remove the prompt text from the generated text:
-                result = generated.replace(prompt.strip(), "").strip()
-                
-                # Clean up any "User decides:" or similar text that might be generated
-                result = re.sub(r'User decides:.*', '', result, flags=re.DOTALL)
-                result = re.sub(r'User chose:.*', '', result, flags=re.DOTALL)
-                result = re.sub(r'What will you do\?.*', 'What will you do?', result, flags=re.DOTALL)
-                
-                return result
-        return "Something's off. A chill runs down your spine... What will you do next?"
+        with st.spinner('Generating the next part of the story...'):
+            response = requests.post(API_URL, headers=headers, json=payload)
+            if response.status_code == 200:
+                output = response.json()
+                if isinstance(output, list) and "generated_text" in output[0]:
+                    generated = output[0]["generated_text"]
+                    # Remove the prompt text from the generated text:
+                    result = generated.replace(prompt.strip(), "").strip()
+                    
+                    # Clean up any "User decides:" or similar text that might be generated
+                    result = re.sub(r'User decides:.*', '', result, flags=re.DOTALL)
+                    result = re.sub(r'User chose:.*', '', result, flags=re.DOTALL)
+                    result = re.sub(r'What will you do\?.*', 'What will you do?', result, flags=re.DOTALL)
+                    
+                    return result
+            return "Something's off. A chill runs down your spine... What will you do next?"
     except Exception as e:
+        st.error(f"An error occurred while generating the story: {e}")
         return "An error occurred while generating the story. Please try again later."
 
 # --- Session State Initialization ---
