@@ -2,3 +2,4 @@ streamlit==1.31.0
 gtts==2.3.2
 SpeechRecognition==3.10.0
 huggingface_hub==0.15.1
+PyAudio==0.2.13
