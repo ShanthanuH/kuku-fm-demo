@@ -30,7 +30,7 @@ User chose:
 Now continue:
 """
 
-    API_KEY = st.secrets["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"]
+    API_KEY = "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"
     API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
     headers = {
         "Authorization": f"Bearer {API_KEY}",
