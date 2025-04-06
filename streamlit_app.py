@@ -13,7 +13,7 @@ st.set_page_config(page_title="AI Story", page_icon="📖")
 def recognize_speech():
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        st.info("Listening...")
+        st.info("🎤 Listening...")
         r.adjust_for_ambient_noise(source)
         try:
             audio = r.listen(source, timeout=5, phrase_time_limit=5)
@@ -40,18 +40,31 @@ The user chose: {user_input}
 Continue the story in 2 paragraphs and ask what happens next.
 """
     try:
-        # Replace with your Hugging Face API key
-        API_KEY = "YOUR_HUGGINGFACE_API_KEY"
+        API_KEY = "YOUR_HUGGINGFACE_API_KEY"  # Replace with your Hugging Face key
         API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
         headers = {"Authorization": f"Bearer {API_KEY}"}
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": 150,
+                "temperature": 0.8,
+                "top_p": 0.95
+            }
+        }
 
-        response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
+        response = requests.post(API_URL, headers=headers, json=payload)
         if response.status_code == 200:
-            return response.json()[0]['generated_text'].replace(prompt, "").strip()
-    except:
-        pass
-    
-    # fallback if no API or error
+            full_text = response.json()[0]['generated_text']
+            continuation = full_text[len(prompt):].strip()
+            return continuation
+        else:
+            st.error("❌ AI model failed to respond.")
+            st.text(f"Error: {response.status_code} - {response.text}")
+    except Exception as e:
+        st.error("⚠️ Something went wrong while generating the story.")
+        st.text(f"Exception: {e}")
+
+    # fallback if API fails
     fallback = [
         "You venture deeper into the forest, hearing whispers in the wind. Suddenly, a path splits into two—one dark, one lit. Which will you take?",
         "You follow the trail, and it leads to an ancient stone altar. Something glows beneath the moss. What do you do?",
@@ -64,11 +77,11 @@ if 'story' not in st.session_state:
     st.session_state.history = []
 
 # --- UI ---
-st.title("🎙️ Simple AI Story")
-st.markdown("Speak or type what you'd like to do next!")
+st.title("🎙️ AI-Powered Story Adventure")
+st.markdown("Speak or type what you'd like to do next and watch the story unfold.")
 
 # Show current story
-st.text_area("Story so far:", value=st.session_state.story, height=200, disabled=True)
+st.text_area("📖 Story so far:", value=st.session_state.story, height=200, disabled=True)
 
 # Listen button
 if st.button("🎤 Speak"):
@@ -83,7 +96,9 @@ else:
 
 # Text input
 text_choice = st.text_input("Or type your action:")
-if st.button("Submit") or choice:
+
+# Submit story continuation
+if st.button("✍️ Submit") or choice:
     user_input = text_choice if text_choice else choice
     if user_input:
         st.session_state.history.append(user_input)
