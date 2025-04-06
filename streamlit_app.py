@@ -9,6 +9,11 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 # --- Page Setup ---
 st.set_page_config(page_title="Kuku VoiceChoice: Indian Murder Mystery", page_icon="🕵️‍♂️")
 
+# --- Disclaimer ---
+st.markdown("""
+**Disclaimer:** This is a demo for Kuku FM by Shanthanu Hemanth (Email: shaanhem@gmail.com, Registration Number: 21BCE2990 from VIT Vellore). It is an interactive story experience where the user can actively participate in the progression of the story.
+""")
+
 # --- Functions ---
 def text_to_speech(text):
     tts = gTTS(text=text, lang='en')
