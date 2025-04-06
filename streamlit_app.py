@@ -232,7 +232,7 @@ def recognize_speech():
     with sr.Microphone() as source:
         r.adjust_for_ambient_noise(source, duration=0.5)
         st.session_state.listening = True
-        st.experimental_rerun() # To display the listening animation
+        st.rerun() # To display the listening animation
         audio = r.listen(source, timeout=5, phrase_time_limit=5)
         st.session_state.listening = False
     
@@ -428,7 +428,7 @@ def main():
                     )
                     st.session_state.story_history.append({"role": "ai", "content": starting_story})
                     st.session_state.story_stage = 1
-                    st.experimental_rerun()
+                    st.rerun()
         
         # Display story progress
         st.subheader("Story Progress")
@@ -457,7 +457,7 @@ def main():
                 st.session_state.story_history = []
                 st.session_state.user_actions = []
                 st.session_state.story_stage = 0
-                st.experimental_rerun()
+                st.rerun()
     
     # Main area - Chat container
     chat_container = st.container()
@@ -466,14 +466,15 @@ def main():
         st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         
         # Display story and user actions as a chat interface
-        for item in st.session_state.story_history:
+        for i, item in enumerate(st.session_state.story_history):
             if item["role"] == "ai":
                 st.markdown(f'<div class="avatar-ai">AI</div><div class="story-text">{item["content"]}</div>', unsafe_allow_html=True)
                 
                 # Audio playback option after each AI message
                 audio_col, _ = st.columns([1, 9])
                 with audio_col:
-                    if st.button("🔊", key=f"listen_{st.session_state.story_history.index(item)}"):
+                    # Fixed the duplicate widget ID issue by using the index i
+                    if st.button("🔊", key=f"listen_{i}"):
                         try:
                             with st.spinner("Generating audio..."):
                                 audio_file = text_to_speech(item["content"])
@@ -514,96 +515,4 @@ def main():
                     if user_choice != "Could not understand audio" and user_choice.startswith("error") is False:
                         # Add user action to history
                         st.session_state.user_actions.append(user_choice)
-                        st.session_state.story_history.append({"role": "user", "content": user_choice})
-                        
-                        # Generate next part of story
-                        with st.spinner("Generating story..."):
-                            # Get the last AI message as the current story
-                            current_story = next((item["content"] for item in reversed(st.session_state.story_history) 
-                                                 if item["role"] == "ai"), "")
-                            
-                            if st.session_state.story_stage < 5:
-                                # Continue the story
-                                continuation = generate_story_continuation(
-                                    current_story, 
-                                    user_choice,
-                                    st.session_state.current_genre
-                                )
-                                st.session_state.story_history.append({"role": "ai", "content": continuation})
-                            else:
-                                # Generate ending
-                                ending = generate_story_ending(
-                                    current_story, 
-                                    st.session_state.user_actions,
-                                    st.session_state.current_genre
-                                )
-                                st.session_state.story_history.append({"role": "ai", "content": ending})
-                            
-                            # Update story stage
-                            st.session_state.story_stage += 1
-                            
-                            # Rerun to update display
-                            st.experimental_rerun()
-                    else:
-                        st.error("Could not understand audio. Please try again or use text input.")
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
-        
-        with col2:
-            user_text = st.text_input("Type your action...", key="user_text_input", 
-                                     placeholder="What do you want to do next?")
-            if st.button("Send", key="submit_text", use_container_width=False):
-                if user_text:
-                    # Add user action to history
-                    st.session_state.user_actions.append(user_text)
-                    st.session_state.story_history.append({"role": "user", "content": user_text})
-                    
-                    # Generate next part of story
-                    with st.spinner("Generating story..."):
-                        # Get the last AI message as the current story
-                        current_story = next((item["content"] for item in reversed(st.session_state.story_history) 
-                                             if item["role"] == "ai"), "")
-                        
-                        if st.session_state.story_stage < 5:
-                            # Continue the story
-                            continuation = generate_story_continuation(
-                                current_story, 
-                                user_text,
-                                st.session_state.current_genre
-                            )
-                            st.session_state.story_history.append({"role": "ai", "content": continuation})
-                        else:
-                            # Generate ending
-                            ending = generate_story_ending(
-                                current_story, 
-                                st.session_state.user_actions,
-                                st.session_state.current_genre
-                            )
-                            st.session_state.story_history.append({"role": "ai", "content": ending})
-                        
-                        # Update story stage
-                        st.session_state.story_stage += 1
-                        
-                        # Rerun to update display
-                        st.experimental_rerun()
-                else:
-                    st.warning("Please enter your action.")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # After story ends (after 5 interactions), show replay button
-    elif st.session_state.story_stage >= 6:
-        st.markdown('<div style="text-align: center; margin: 30px 0;">', unsafe_allow_html=True)
-        if st.button("🔄 Start a New Adventure", key="new_adventure", use_container_width=False):
-            # Reset all state
-            st.session_state.story_history = []
-            st.session_state.user_actions = []
-            st.session_state.story_stage = 0
-            st.experimental_rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Footer
-    st.markdown('<div class="footer">KukuFM VoiceChoice Tales - AI-Powered Interactive Storyteller</div>', unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()
+                        st.session_state.story_history.append({"role": "user", "content":
