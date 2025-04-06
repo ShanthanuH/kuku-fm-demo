@@ -60,7 +60,7 @@ if 'story' not in st.session_state:
     st.session_state.history = []
 
 # --- UI ---
-st.title("📖 Interactive AI Story")
+st.title("📖 Kuku VoiceChoice: Interactive Story Experience")
 st.markdown("Type what you'd like to do next and continue the story!")
 st.info("🎤 Voice input coming soon! For now, please use text input.")
 
