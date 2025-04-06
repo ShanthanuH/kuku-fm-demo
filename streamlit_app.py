@@ -6,13 +6,13 @@ import requests
 import re
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+# --- Page Setup ---
+st.set_page_config(page_title="Kuku VoiceChoice: Indian Murder Mystery", page_icon="🕵️‍♂️")
+
 # --- Disclaimer ---
 st.markdown("""
 **Disclaimer:** This is a demo for Kuku FM by Shanthanu Hemanth (Email: shaanhem@gmail.com, Registration Number: 21BCE2990 from VIT Vellore). It is an interactive story experience where the user can actively participate in the progression of the story.
 """)
-
-# --- Page Setup ---
-st.set_page_config(page_title="Kuku VoiceChoice: Indian Murder Mystery", page_icon="🕵️‍♂️")
 
 # --- Functions ---
 def text_to_speech(text):
@@ -45,7 +45,7 @@ Now continue:
     payload = {
         "inputs": prompt,
         "parameters": {
-            "max_new_tokens": 250,  # Reduced token limit to manage API usage
+            "max_new_tokens": 250, # Reduced token limit to manage API usage
             "temperature": 0.85,
             "do_sample": True
         }
@@ -60,12 +60,12 @@ Now continue:
                     generated = output[0]["generated_text"]
                     # Remove the prompt text from the generated text:
                     result = generated.replace(prompt.strip(), "").strip()
-
+                    
                     # Clean up any "User decides:" or similar text that might be generated
                     result = re.sub(r'User decides:.*', '', result, flags=re.DOTALL)
                     result = re.sub(r'User chose:.*', '', result, flags=re.DOTALL)
                     result = re.sub(r'What will you do\?.*', 'What will you do?', result, flags=re.DOTALL)
-
+                    
                     return result
             return "Something's off. A chill runs down your spine... What will you do next?"
     except Exception as e:
@@ -81,7 +81,7 @@ if 'story' not in st.session_state:
         "What do you do first?"
     )
     st.session_state.history = []
-    st.session_state.story_waiting_for_input = True  # When True, show input box
+    st.session_state.story_waiting_for_input = True # When True, show input box
 
 # --- UI Layout ---
 st.title("🕵️‍♂️ Kuku VoiceChoice: Indian Murder Mystery: Shanthanu Hemanth")
@@ -99,7 +99,7 @@ if st.session_state.story_waiting_for_input:
         st.session_state.history.append(user_input)
         next_part = generate_story_continuation(st.session_state.story, user_input)
         st.session_state.story += f"\n\n🧑‍💼 You: {user_input}\n\n🕵️ Inspector's Log: {next_part}"
-        st.session_state.story_waiting_for_input = False  # Disable input until user chooses to continue
+        st.session_state.story_waiting_for_input = False # Disable input until user chooses to continue
         st.rerun()
 else:
     # When waiting for the user to review AI output, show a continue button.
