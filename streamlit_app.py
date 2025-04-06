@@ -95,7 +95,7 @@ if 'story' not in st.session_state:
 # --- UI Layout ---
 st.title("🕵️‍♂️ Kuku VoiceChoice: Indian Murder Mystery: Shanthanu Hemanth")
 st.markdown("Step into the shoes of Inspector Aryan Mehta and unravel the mystery.")
-st.info("🎤 Voice input coming soon! For now, please use text input.")
+st.info("🎤 In the actual implementation in Kuku App, the function will also have voice input.")
 
 # Display current story
 st.text_area("Case File:", value=st.session_state.story, height=300, disabled=True)
