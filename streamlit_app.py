@@ -5,7 +5,7 @@ import os
 import requests
 
 # --- Config ---
-st.set_page_config(page_title="AI Story", page_icon="📖")
+st.set_page_config(page_title="Kuku VoiceChoice: Interactive Story Experience", page_icon="📖")
 
 # --- Functions ---
 def text_to_speech(text):
