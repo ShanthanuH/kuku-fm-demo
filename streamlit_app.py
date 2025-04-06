@@ -3,10 +3,8 @@ import speech_recognition as sr
 from gtts import gTTS
 import os
 import tempfile
-from huggingface_hub import InferenceClient
-
-# Initialize Hugging Face client - replace with your actual API key
-client = InferenceClient(token="HUGGINGFACE_API_KEY")
+import requests
+import json
 
 # Set page configuration
 st.set_page_config(
@@ -77,7 +75,7 @@ def text_to_speech(text):
         st.error(f"Error generating speech: {str(e)}")
         return None
 
-# Function to generate story continuation using Hugging Face API
+# Function to generate story continuation using direct API call instead of huggingface_hub
 def generate_story_continuation(story_so_far, user_action):
     prompt = f"""
 Continue this interactive story based on the user's choice:
@@ -90,20 +88,40 @@ The user has decided to: {user_action}
 Continue the story based on this action. Make it engaging and end with a question asking what the user wants to do next.
 Write 2-3 paragraphs only.
 """
+    # Use a fallback response in case the API call fails
+    fallback_responses = [
+        "As you continue your journey, the path becomes more intriguing. The forest seems to respond to your choices, shifting and changing around you. What will you do next?",
+        "Your decision leads you deeper into the mystery. Strange sounds echo around you, and you sense that something significant is about to happen. What's your next move?",
+        "The forest acknowledges your choice, revealing new details and possibilities. A crossroads appears before you. Which way will you go now?"
+    ]
+    
     try:
-        response = client.text_generation(
-            model="mistralai/Mistral-7B-Instruct-v0.2",
-            inputs=prompt,
-            parameters={
-                "max_new_tokens": 250, 
+        # Replace with your API key and endpoint
+        API_KEY = "YOUR_HUGGINGFACE_API_KEY"  # Replace with your actual API key
+        headers = {"Authorization": f"Bearer {API_KEY}"}
+        API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+        
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": 250,
                 "temperature": 0.7,
                 "top_p": 0.9
             }
-        )
-        return response
+        }
+        
+        response = requests.post(API_URL, headers=headers, json=payload)
+        
+        if response.status_code == 200:
+            return response.json()[0]["generated_text"].replace(prompt, "")
+        else:
+            st.warning("Could not generate story continuation. Using fallback response.")
+            import random
+            return random.choice(fallback_responses)
     except Exception as e:
         st.error(f"Error generating story: {e}")
-        return "What would you like to do next?"
+        import random
+        return random.choice(fallback_responses)
 
 # Function to generate initial story beginning
 def generate_story_beginning():
@@ -138,12 +156,12 @@ def main():
         st.session_state.story_so_far = story_beginning
     
     # Display story and user actions
-    for item in st.session_state.story_history:
+    for i, item in enumerate(st.session_state.story_history):
         if item["role"] == "ai":
             st.markdown(f'<div class="story-text">{item["content"]}</div>', unsafe_allow_html=True)
             
-            # Audio button for AI parts
-            if st.button("🔊 Listen", key=f"listen_{len(st.session_state.story_history)}"):
+            # Audio button for AI parts - use unique key with index
+            if st.button("🔊 Listen", key=f"listen_{i}"):
                 audio_file = text_to_speech(item["content"])
                 if audio_file:
                     st.audio(audio_file)
