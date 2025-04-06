@@ -40,7 +40,7 @@ The user chose: {user_input}
 Continue the story in 2 paragraphs and ask what happens next.
 """
     try:
-        API_KEY = "YOUR_HUGGINGFACE_API_KEY"  # Replace with your Hugging Face key
+        API_KEY = "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"  # Replace with your Hugging Face key
         API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
         headers = {"Authorization": f"Bearer {API_KEY}"}
         payload = {
