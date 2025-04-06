@@ -16,28 +16,16 @@ def text_to_speech(text):
     return fp
 
 def generate_story_continuation(story_so_far, user_input):
-    # Extract only the most recent part of the story to avoid token limits
-    story_parts = story_so_far.split("\n\n")
-    recent_story = "\n\n".join(story_parts[-4:]) if len(story_parts) > 4 else story_so_far
-    
     prompt = f"""
-Continue this Indian murder mystery set in Darjeeling. Write a vivid, immersive continuation based on the user's choice.
+Continue this Indian murder mystery set in Darjeeling. Write immersive and vivid prose like a gripping detective thriller. Continue the story in 1-2 paragraphs based on the user's decision. End with a question asking what the user wants to do next. DO NOT include any text like "User decides:" or similar - only provide the narrative continuation.
 
-Guidelines:
-1. Write 2-3 paragraphs of rich, atmospheric prose
-2. Include sensory details and tension
-3. End with an open question about what to do next
-4. Do NOT offer multiple choice options
-5. Do NOT include text like "User decides:" or numbered options
-6. Focus on developing the mystery with clues and atmosphere
-
-Recent story context:
-{recent_story}
+Case notes so far:
+{story_so_far}
 
 User chose:
 {user_input}
 
-Now continue the story:
+Now continue:
 """
 
     # Replace with secure method: API_KEY = st.secrets["HUGGINGFACE_API_KEY"]
@@ -51,8 +39,8 @@ Now continue the story:
     payload = {
         "inputs": prompt,
         "parameters": {
-            "max_new_tokens": 350,  # Increased token limit
-            "temperature": 0.75,    # Slightly reduced for more coherent output
+            "max_new_tokens": 300,
+            "temperature": 0.85,
             "do_sample": True
         }
     }
@@ -66,23 +54,15 @@ Now continue the story:
                 # Remove the prompt text from the generated text:
                 result = generated.replace(prompt.strip(), "").strip()
                 
-                # Clean up any problematic patterns
+                # Clean up any "User decides:" or similar text that might be generated
                 result = re.sub(r'User decides:.*', '', result, flags=re.DOTALL)
                 result = re.sub(r'User chose:.*', '', result, flags=re.DOTALL)
-                result = re.sub(r'Options:.*', '', result, flags=re.DOTALL)
-                result = re.sub(r'\d+\.\s.*', '', result, flags=re.DOTALL)  # Remove numbered options
-                
-                # Ensure the response is substantial
-                if len(result.split()) < 20:
-                    return "Your investigation leads to a surprising revelation. The air feels thick with tension as you process this new information. What will you do next, Inspector?"
+                result = re.sub(r'What will you do\?.*', 'What will you do?', result, flags=re.DOTALL)
                 
                 return result
-            
-        # Handle API issues with a fallback response
-        return "As you delve deeper into the mystery, new connections begin to emerge. The pieces of the puzzle are starting to fit together, but something still feels off. What's your next move, Inspector?"
-    
+        return "Something's off. A chill runs down your spine... What will you do next?"
     except Exception as e:
-        return f"The case takes an unexpected turn. Your instincts tell you there's more to this than meets the eye. What will you do next, Inspector?"
+        return "An error occurred while generating the story. Please try again later."
 
 # --- Session State Initialization ---
 if 'story' not in st.session_state:
@@ -96,17 +76,12 @@ if 'story' not in st.session_state:
     st.session_state.story_waiting_for_input = True  # When True, show input box
 
 # --- UI Layout ---
-st.title("🕵️‍♂️ Kuku VoiceChoice: Indian Murder Mystery")
+st.title("🕵️‍♂️ Kuku VoiceChoice: Indian Murder Mystery: Shanthanu Hemanth")
 st.markdown("Step into the shoes of Inspector Aryan Mehta and unravel the mystery.")
 st.info("🎤 Voice input coming soon! For now, please use text input.")
 
 # Display the current story with preserved line breaks.
 st.text_area("Case File:", value=st.session_state.story, height=300, disabled=True)
-
-# --- Debug Information (optional) ---
-# Uncomment this to see debugging info
-# if 'history' in st.session_state:
-#     st.write(f"Story history entries: {len(st.session_state.history)}")
 
 # --- Interaction Flow ---
 if st.session_state.story_waiting_for_input:
