@@ -3,6 +3,7 @@ from gtts import gTTS
 import tempfile
 import os
 import requests
+import re
 
 # --- Page Setup ---
 st.set_page_config(page_title="Kuku VoiceChoice: Indian Murder Mystery", page_icon="🕵️‍♂️")
@@ -16,7 +17,7 @@ def text_to_speech(text):
 
 def generate_story_continuation(story_so_far, user_input):
     prompt = f"""
-Continue this Indian murder mystery set in Darjeeling. Write immersive and vivid prose like a gripping detective thriller. Continue the story in 1-2 paragraphs based on the user's decision. End with an open-ended question that allows the user to decide what to do next. Do NOT provide multiple choice options - let the user decide freely what to do.
+Continue this Indian murder mystery set in Darjeeling. Write immersive and vivid prose like a gripping detective thriller. Continue the story in 1-2 paragraphs based on the user's decision. End with a question asking what the user wants to do next. DO NOT include any text like "User decides:" or similar - only provide the narrative continuation.
 
 Case notes so far:
 {story_so_far}
@@ -51,7 +52,14 @@ Now continue:
             if isinstance(output, list) and "generated_text" in output[0]:
                 generated = output[0]["generated_text"]
                 # Remove the prompt text from the generated text:
-                return generated.replace(prompt.strip(), "").strip()
+                result = generated.replace(prompt.strip(), "").strip()
+                
+                # Clean up any "User decides:" or similar text that might be generated
+                result = re.sub(r'User decides:.*', '', result, flags=re.DOTALL)
+                result = re.sub(r'User chose:.*', '', result, flags=re.DOTALL)
+                result = re.sub(r'What will you do\?.*', 'What will you do?', result, flags=re.DOTALL)
+                
+                return result
         return "Something's off. A chill runs down your spine... What will you do next?"
     except Exception as e:
         return "An error occurred while generating the story. Please try again later."
