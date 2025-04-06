@@ -24,7 +24,7 @@ def text_to_speech(text):
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def generate_story_continuation(story_so_far, user_input):
     prompt = f"""
-Continue this Indian murder mystery set in Darjeeling. Write immersive and vivid prose like a gripping detective thriller. Continue the story in strictly 1 paragraph (not more) based on the user's decision. End with a question asking what the user wants to do next. DO NOT include any text like "User decides:" or similar - only provide the narrative continuation. Make sure that you dont end in between sentence, always end a para with a question for the user. After the user answers, continue from there, generate like 50 words continue story, and then give a question for the user again.
+Continue this Indian murder mystery set in Darjeeling. Write immersive and vivid prose like a gripping detective thriller. Continue the story in strictly 1 paragraph (not more) based on the user's decision. End with a question asking what the user wants to do next. DO NOT include any text like "User decides:" or similar - only provide the narrative continuation. Make sure that you don't end in between sentences; always end a paragraph with a question for the user. After the user answers, continue from there, generate about 50 words of continuation, and then give a question for the user again.
 
 Case notes so far:
 {story_so_far}
@@ -35,6 +35,7 @@ User chose:
 Now continue:
 """
 
+    # For security, replace with st.secrets["HUGGINGFACE_API_KEY"] in production.
     API_KEY = "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"
     API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
     headers = {
@@ -45,7 +46,7 @@ Now continue:
     payload = {
         "inputs": prompt,
         "parameters": {
-            "max_new_tokens": 250, # Reduced token limit to manage API usage
+            "max_new_tokens": 250,  # Reduced token limit to manage API usage
             "temperature": 0.85,
             "do_sample": True
         }
@@ -54,20 +55,26 @@ Now continue:
     try:
         with st.spinner('Generating the next part of the story...'):
             response = requests.post(API_URL, headers=headers, json=payload)
-            if response.status_code == 200:
-                output = response.json()
-                if isinstance(output, list) and "generated_text" in output[0]:
-                    generated = output[0]["generated_text"]
-                    # Remove the prompt text from the generated text:
-                    result = generated.replace(prompt.strip(), "").strip()
-                    
-                    # Clean up any "User decides:" or similar text that might be generated
-                    result = re.sub(r'User decides:.*', '', result, flags=re.DOTALL)
-                    result = re.sub(r'User chose:.*', '', result, flags=re.DOTALL)
-                    result = re.sub(r'What will you do\?.*', 'What will you do?', result, flags=re.DOTALL)
-                    
-                    return result
-            return "Something's off. A chill runs down your spine... What will you do next?"
+        # Debug: write out the response for troubleshooting.
+        st.write("DEBUG: Response Status", response.status_code)
+        st.write("DEBUG: Response Text", response.text)
+        
+        if response.status_code == 200:
+            output = response.json()
+            if isinstance(output, list) and "generated_text" in output[0]:
+                generated = output[0]["generated_text"]
+                # Remove the prompt text from the generated text:
+                result = generated.replace(prompt.strip(), "").strip()
+                # Clean up any unwanted text markers:
+                result = re.sub(r'User decides:.*', '', result, flags=re.DOTALL)
+                result = re.sub(r'User chose:.*', '', result, flags=re.DOTALL)
+                result = re.sub(r'What will you do\?.*', 'What will you do?', result, flags=re.DOTALL)
+                # If result is empty or too short, consider it a failure:
+                if not result or len(result.split()) < 10:
+                    return "The AI couldn't generate enough detail this time. What will you do next?"
+                return result
+        # Fallback text if no valid generation:
+        return "The AI didn't return a valid continuation. What will you do next?"
     except Exception as e:
         st.error(f"An error occurred while generating the story: {e}")
         return "An error occurred while generating the story. Please try again later."
@@ -81,7 +88,7 @@ if 'story' not in st.session_state:
         "What do you do first?"
     )
     st.session_state.history = []
-    st.session_state.story_waiting_for_input = True # When True, show input box
+    st.session_state.story_waiting_for_input = True  # When True, show input box
 
 # --- UI Layout ---
 st.title("🕵️‍♂️ Kuku VoiceChoice: Indian Murder Mystery: Shanthanu Hemanth")
@@ -99,7 +106,7 @@ if st.session_state.story_waiting_for_input:
         st.session_state.history.append(user_input)
         next_part = generate_story_continuation(st.session_state.story, user_input)
         st.session_state.story += f"\n\n🧑‍💼 You: {user_input}\n\n🕵️ Inspector's Log: {next_part}"
-        st.session_state.story_waiting_for_input = False # Disable input until user chooses to continue
+        st.session_state.story_waiting_for_input = False  # Disable input until user chooses to continue
         st.rerun()
 else:
     # When waiting for the user to review AI output, show a continue button.
